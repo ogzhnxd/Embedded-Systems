@@ -1,0 +1,27 @@
+[PROJECT]
+Target=IR Step Motor Control.hex
+Processor_Text=PIC16F877A
+CCSVersion=5.007
+Compiler=PCM
+[Target Data]
+FileList=IR Step Motor Control.c
+[Directories]
+Include=C:\Program Files (x86)\PICC\Devices\;C:\Program Files (x86)\PICC\Drivers\
+[IR Step Motor Control.c]
+Type=4
+[mru-list]
+1=IR Step Motor Control.c
+[Opened Files]
+1=IR Decoder Deneme.c
+2=..\..\Desktop\sasdas.c
+3=IR Decoder.c
+4=..\..\Desktop\hcsr.c
+5=..\Led Chaser\LED Chaser.c
+6=..\Binary Counter\Binary Counter.c
+7=..\Binary Counter\deneme.c
+8=IR Step Motor Control.c
+9=IR ilk.c
+10=
+[Units]
+Count=1
+1=IR Step Motor Control (main)

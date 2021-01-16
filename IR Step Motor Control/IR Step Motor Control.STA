@@ -1,0 +1,55 @@
+
+ROM used:   744/8192 (9%)
+            744/8192 (9%) including unused fragments
+
+            0.8 Average locations per line
+            4.6 Average locations per statement
+
+RAM used:   19/368 (5%) at main() level
+            28/368 (8%) worst case
+
+Stack used: 1 worst case (0 in main + 1 for interrupts)
+Stack size: 8
+
+Lines Stmts  %   Files
+----- ----- ---  -----
+  222   162 100  IR Step Motor Control.c
+  661     0   0  ..\..\..\..\Program Files (x86)\PICC\Devices\16F877A.h
+----- -----
+  883   162 Total
+
+Page ROM  %  RAM   Vol Diff  Functions:
+---- --- --- ---   --- ----  ----------
+0     20   3    1             @delay_ms1
+0     26   3    0   373  1.9  LED_sequence1
+0     29   4    0   494  1.9  LED_sequence2
+0     12   2    0    56  1.6  timer1_isr
+0    306  41    8  2313  8.9  ext_isr
+0     18   2    1   202  3.1  stepper
+0      8   1    0   494  1.9  @goto10706
+0    269  36    0  1732  7.9  MAIN
+ Inline         0             @cinit1
+
+Program metrics:
+    Functions               7
+    Statements              162
+    Comments                171
+    Volume (V)              7713
+    Difficulty (D)          27.4
+    Effort to implement (E) 211292
+    Time to implement (T)   3 hours, 16 minutes
+    Est Delivered Bugs (B)  1
+    Cyclomatic Complexity   21
+    Maintainability (MI)    132
+
+ Segment     Used  Free
+-----------  ----  ----
+00000-00003     4  0  
+00004-00037    52  0  
+00038-007FF   688  1304  
+00800-00FFF     0  2048  
+01000-017FF     0  2048  
+01800-01FFF     0  2048  
+
+
+

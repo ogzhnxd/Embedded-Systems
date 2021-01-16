@@ -1,0 +1,988 @@
+CCS PCM C Compiler, Version 5.007, 61971               09-Oca-21 22:36
+
+               Filename:   C:\Users\THERMALTAKE\CCS C Projects\IR Step Motor Control\IR Step Motor Control.lst
+
+               ROM used:   744 words (9%)
+                           Largest free fragment is 2048
+               RAM used:   19 (5%) at main() level
+                           28 (8%) worst case
+               Stack used: 1 locations (0 in main + 1 for interrupts)
+               Stack size: 8
+
+*
+0000:  MOVLW  01
+0001:  MOVWF  0A
+0002:  GOTO   1DB
+0003:  NOP
+0004:  MOVWF  7F
+0005:  SWAPF  03,W
+0006:  CLRF   03
+0007:  MOVWF  21
+0008:  MOVF   0A,W
+0009:  MOVWF  20
+000A:  CLRF   0A
+000B:  MOVF   04,W
+000C:  MOVWF  22
+000D:  MOVF   77,W
+000E:  MOVWF  23
+000F:  MOVF   78,W
+0010:  MOVWF  24
+0011:  MOVF   79,W
+0012:  MOVWF  25
+0013:  MOVF   7A,W
+0014:  MOVWF  26
+0015:  BCF    03.7
+0016:  BCF    03.5
+0017:  BTFSS  0B.4
+0018:  GOTO   01B
+0019:  BTFSC  0B.1
+001A:  GOTO   032
+001B:  MOVLW  8C
+001C:  MOVWF  04
+001D:  BTFSS  00.0
+001E:  GOTO   021
+001F:  BTFSC  0C.0
+0020:  GOTO   035
+0021:  MOVF   22,W
+0022:  MOVWF  04
+0023:  MOVF   23,W
+0024:  MOVWF  77
+0025:  MOVF   24,W
+0026:  MOVWF  78
+0027:  MOVF   25,W
+0028:  MOVWF  79
+0029:  MOVF   26,W
+002A:  MOVWF  7A
+002B:  MOVF   20,W
+002C:  MOVWF  0A
+002D:  SWAPF  21,W
+002E:  MOVWF  03
+002F:  SWAPF  7F,F
+0030:  SWAPF  7F,W
+0031:  RETFIE
+0032:  BCF    0A.3
+0033:  BCF    0A.4
+0034:  GOTO   044
+0035:  BCF    0A.3
+0036:  BCF    0A.4
+0037:  GOTO   038
+.................... // Uzaktan kumanda ile Step Motor ve LED Kontrolü 
+.................... // 181202023 Oðuzhan Güvercin 
+....................  
+.................... //Mikrokontrolcünün hazýrlanmasý 
+.................... #include <16F877A.h> 
+.................... //////// Standard Header file for the PIC16F877A device //////////////// 
+.................... #device PIC16F877A 
+*
+0188:  BSF    0A.0
+0189:  BCF    0A.1
+018A:  BCF    0A.2
+018B:  ADDWF  02,F
+018C:  GOTO   17C
+018D:  GOTO   17F
+018E:  GOTO   182
+018F:  GOTO   185
+....................  
+.................... #list 
+....................  
+.................... #fuses HS,NOWDT,NOPROTECT,NOLVP 
+.................... #use delay(clock = 8000000) 
+0190:  MOVLW  2E
+0191:  MOVWF  04
+0192:  BCF    03.7
+0193:  MOVF   00,W
+0194:  BTFSC  03.2
+0195:  GOTO   1A3
+0196:  MOVLW  02
+0197:  MOVWF  78
+0198:  CLRF   77
+0199:  DECFSZ 77,F
+019A:  GOTO   199
+019B:  DECFSZ 78,F
+019C:  GOTO   198
+019D:  MOVLW  97
+019E:  MOVWF  77
+019F:  DECFSZ 77,F
+01A0:  GOTO   19F
+01A1:  DECFSZ 00,F
+01A2:  GOTO   196
+01A3:  RETURN
+.................... #use fast_io(B) 
+.................... #use fast_io(C) 
+.................... #use fast_io(D) 
+....................  
+.................... //LED baðlantýlarý 
+.................... #define LED_1 PIN_C7 
+.................... #define LED_2 PIN_C6 
+.................... #define LED_3 PIN_C5 
+.................... #define LED_4 PIN_C4 
+....................  
+.................... //Deðiþken tanýmlarý 
+.................... unsigned int8 step_number = 0, speed_delay = 2, led_speed=100; 
+.................... unsigned int32 remote_code; 
+....................  
+.................... //LED Sekansý 1 
+.................... void LED_sequence1(){                                                             
+....................    output_bit(LED_1, 1); 
+01A4:  BSF    07.7
+....................    delay_ms(led_speed); 
+01A5:  MOVF   29,W
+01A6:  MOVWF  2E
+01A7:  CALL   190
+....................    output_bit(LED_2, 1); 
+01A8:  BSF    07.6
+....................    delay_ms(led_speed); 
+01A9:  MOVF   29,W
+01AA:  MOVWF  2E
+01AB:  CALL   190
+....................    output_bit(LED_3, 1); 
+01AC:  BSF    07.5
+....................    delay_ms(led_speed); 
+01AD:  MOVF   29,W
+01AE:  MOVWF  2E
+01AF:  CALL   190
+....................    output_bit(LED_4, 1); 
+01B0:  BSF    07.4
+....................    delay_ms(led_speed); 
+01B1:  MOVF   29,W
+01B2:  MOVWF  2E
+01B3:  CALL   190
+....................    output_bit(LED_1, 0); 
+01B4:  BCF    07.7
+....................    output_bit(LED_2, 0); 
+01B5:  BCF    07.6
+....................    output_bit(LED_3, 0); 
+01B6:  BCF    07.5
+....................    output_bit(LED_4, 0); 
+01B7:  BCF    07.4
+....................    delay_ms(led_speed); 
+01B8:  MOVF   29,W
+01B9:  MOVWF  2E
+01BA:  CALL   190
+01BB:  BCF    0A.3
+01BC:  BCF    0A.4
+01BD:  GOTO   2B6 (RETURN)
+....................     
+.................... } 
+....................  
+.................... //Led Sekansý 2 
+.................... void LED_sequence2(){                                                             
+....................    output_bit(LED_1, 1); 
+01BE:  BSF    07.7
+....................    delay_ms(led_speed); 
+01BF:  MOVF   29,W
+01C0:  MOVWF  2E
+01C1:  CALL   190
+....................    output_bit(LED_1, 0); 
+01C2:  BCF    07.7
+....................    output_bit(LED_2, 1); 
+01C3:  BSF    07.6
+....................    delay_ms(led_speed); 
+01C4:  MOVF   29,W
+01C5:  MOVWF  2E
+01C6:  CALL   190
+....................    output_bit(LED_2, 0); 
+01C7:  BCF    07.6
+....................    output_bit(LED_3, 1); 
+01C8:  BSF    07.5
+....................    delay_ms(led_speed); 
+01C9:  MOVF   29,W
+01CA:  MOVWF  2E
+01CB:  CALL   190
+....................    output_bit(LED_3, 0); 
+01CC:  BCF    07.5
+....................    output_bit(LED_4, 1); 
+01CD:  BSF    07.4
+....................    delay_ms(led_speed); 
+01CE:  MOVF   29,W
+01CF:  MOVWF  2E
+01D0:  CALL   190
+....................    output_bit(LED_4, 0); 
+01D1:  BCF    07.4
+....................    output_bit(LED_1, 0); 
+01D2:  BCF    07.7
+....................    output_bit(LED_2, 0); 
+01D3:  BCF    07.6
+....................    output_bit(LED_3, 0); 
+01D4:  BCF    07.5
+....................    delay_ms(led_speed); 
+01D5:  MOVF   29,W
+01D6:  MOVWF  2E
+01D7:  CALL   190
+01D8:  BCF    0A.3
+01D9:  BCF    0A.4
+01DA:  GOTO   2C5 (RETURN)
+....................  
+.................... } 
+....................  
+.................... #INT_TIMER1                                                                     // Timer1 kesme ISR 
+.................... void timer1_isr(void){ 
+....................   remote_code = 0;                                                              // Kesme oluþursa uzaktan kumanda komutnu sil 
+*
+0038:  CLRF   2D
+0039:  CLRF   2C
+003A:  CLRF   2B
+003B:  CLRF   2A
+....................   clear_interrupt(INT_TIMER1); 
+003C:  BCF    0C.0
+....................   disable_interrupts(INT_TIMER1); 
+003D:  BSF    03.5
+003E:  BCF    0C.0
+.................... } 
+....................  
+003F:  BCF    03.5
+0040:  BCF    0C.0
+0041:  BCF    0A.3
+0042:  BCF    0A.4
+0043:  GOTO   021
+.................... #INT_EXT                                                                        // Dýþ kesme ISR 
+.................... void ext_isr(void){ 
+0044:  CLRF   2F
+....................   unsigned int8 count = 0, i; 
+....................   unsigned int32 ir_code;  
+....................   //NEC protokolünün kontrolü ve decode edilmesi 
+....................   // 9ms'lik lojik High sinyalinin kontrol et 
+....................   while((input(PIN_B0) == 0) && (count < 200)){ 
+0045:  BTFSC  06.0
+0046:  GOTO   053
+0047:  MOVF   2F,W
+0048:  SUBLW  C7
+0049:  BTFSS  03.0
+004A:  GOTO   053
+....................     count++; 
+004B:  INCF   2F,F
+....................     delay_us(50);} 
+004C:  MOVLW  20
+004D:  MOVWF  77
+004E:  DECFSZ 77,F
+004F:  GOTO   04E
+0050:  GOTO   051
+0051:  NOP
+0052:  GOTO   045
+....................   if( (count > 199) || (count < 160))                                           // Lojik 1 8-10ms aralýðýnda ise ise kontrol etmeye devam et 
+0053:  MOVF   2F,W
+0054:  SUBLW  C7
+0055:  BTFSS  03.0
+0056:  GOTO   05A
+0057:  MOVF   2F,W
+0058:  SUBLW  9F
+0059:  BTFSC  03.0
+....................     return;                           
+005A:  GOTO   172
+....................   count = 0; 
+005B:  CLRF   2F
+....................   // 4.5ms'lik lojik Low sinyalinin kontrol et 
+....................   while((input(PIN_B0)) && (count < 100)){ 
+005C:  BTFSS  06.0
+005D:  GOTO   06A
+005E:  MOVF   2F,W
+005F:  SUBLW  63
+0060:  BTFSS  03.0
+0061:  GOTO   06A
+....................     count++; 
+0062:  INCF   2F,F
+....................     delay_us(50);} 
+0063:  MOVLW  20
+0064:  MOVWF  77
+0065:  DECFSZ 77,F
+0066:  GOTO   065
+0067:  GOTO   068
+0068:  NOP
+0069:  GOTO   05C
+....................   if( (count > 99) || (count < 30))                                             // Lojik 0 5-1.5ms aralýðýnda ise ise kontrol etmeye devam et 
+006A:  MOVF   2F,W
+006B:  SUBLW  63
+006C:  BTFSS  03.0
+006D:  GOTO   071
+006E:  MOVF   2F,W
+006F:  SUBLW  1D
+0070:  BTFSC  03.0
+....................     return; 
+0071:  GOTO   172
+....................   // Düðmelere basýl tutulduðunda gelen komutu oku 
+....................   if(count < 60){ 
+0072:  MOVF   2F,W
+0073:  SUBLW  3B
+0074:  BTFSS  03.0
+0075:  GOTO   0AA
+....................     count = 0; 
+0076:  CLRF   2F
+....................     while((input(PIN_B0) == 0) && (count < 14)){ 
+0077:  BTFSC  06.0
+0078:  GOTO   085
+0079:  MOVF   2F,W
+007A:  SUBLW  0D
+007B:  BTFSS  03.0
+007C:  GOTO   085
+....................       count++; 
+007D:  INCF   2F,F
+....................       delay_us(50);} 
+007E:  MOVLW  20
+007F:  MOVWF  77
+0080:  DECFSZ 77,F
+0081:  GOTO   080
+0082:  GOTO   083
+0083:  NOP
+0084:  GOTO   077
+....................     if( (count > 13) || (count < 8))                                            // NEC protokolü mü? 
+0085:  MOVF   2F,W
+0086:  SUBLW  0D
+0087:  BTFSS  03.0
+0088:  GOTO   08C
+0089:  MOVF   2F,W
+008A:  SUBLW  07
+008B:  BTFSC  03.0
+....................       return; 
+008C:  GOTO   172
+....................     if((remote_code == 0x00FF02FD) || (remote_code == 0x00FF22DD))              // >>| ==> 0x00FF02FD  veya   |<< ==> 0x00FF22DD düðmelerine baþýlýrsa timer1'i sýfýrla 
+008D:  MOVF   2A,W
+008E:  SUBLW  FD
+008F:  BTFSS  03.2
+0090:  GOTO   09A
+0091:  MOVF   2B,W
+0092:  SUBLW  02
+0093:  BTFSS  03.2
+0094:  GOTO   09A
+0095:  INCFSZ 2C,W
+0096:  GOTO   09A
+0097:  MOVF   2D,F
+0098:  BTFSC  03.2
+0099:  GOTO   0A7
+009A:  MOVF   2A,W
+009B:  SUBLW  DD
+009C:  BTFSS  03.2
+009D:  GOTO   0AA
+009E:  MOVF   2B,W
+009F:  SUBLW  22
+00A0:  BTFSS  03.2
+00A1:  GOTO   0AA
+00A2:  INCFSZ 2C,W
+00A3:  GOTO   0AA
+00A4:  MOVF   2D,F
+00A5:  BTFSS  03.2
+00A6:  GOTO   0AA
+....................     set_timer1(0);                                                              // Düðmelerin basýlý kaldýðý süreyi hesaplamak için kesme 
+00A7:  CLRF   0E
+00A8:  CLRF   0F
+00A9:  CLRF   0E
+....................   } 
+....................   // Komutu oku (32 bit ==> 16 bit adres, 16 bit komut) 
+....................   for(i = 0; i < 32; i++){ 
+00AA:  CLRF   30
+00AB:  MOVF   30,W
+00AC:  SUBLW  1F
+00AD:  BTFSS  03.0
+00AE:  GOTO   11F
+....................     count = 0; 
+00AF:  CLRF   2F
+....................     while((input(PIN_B0) == 0) && (count < 14)){                                // Lojik 0 kontrolü 
+00B0:  BTFSC  06.0
+00B1:  GOTO   0BE
+00B2:  MOVF   2F,W
+00B3:  SUBLW  0D
+00B4:  BTFSS  03.0
+00B5:  GOTO   0BE
+....................       count++; 
+00B6:  INCF   2F,F
+....................       delay_us(50);} 
+00B7:  MOVLW  20
+00B8:  MOVWF  77
+00B9:  DECFSZ 77,F
+00BA:  GOTO   0B9
+00BB:  GOTO   0BC
+00BC:  NOP
+00BD:  GOTO   0B0
+....................     if( (count > 13) || (count < 8))                                            // NEC protokolü mü? 
+00BE:  MOVF   2F,W
+00BF:  SUBLW  0D
+00C0:  BTFSS  03.0
+00C1:  GOTO   0C5
+00C2:  MOVF   2F,W
+00C3:  SUBLW  07
+00C4:  BTFSC  03.0
+....................       return;                           
+00C5:  GOTO   172
+....................     count = 0; 
+00C6:  CLRF   2F
+....................     while((input(PIN_B0)) && (count < 40)){                                     // Lojik 1 kontrolü 
+00C7:  BTFSS  06.0
+00C8:  GOTO   0D5
+00C9:  MOVF   2F,W
+00CA:  SUBLW  27
+00CB:  BTFSS  03.0
+00CC:  GOTO   0D5
+....................       count++; 
+00CD:  INCF   2F,F
+....................       delay_us(50);} 
+00CE:  MOVLW  20
+00CF:  MOVWF  77
+00D0:  DECFSZ 77,F
+00D1:  GOTO   0D0
+00D2:  GOTO   0D3
+00D3:  NOP
+00D4:  GOTO   0C7
+....................     if( (count > 39) || (count < 8))                                            // NEC protokolü mü? 
+00D5:  MOVF   2F,W
+00D6:  SUBLW  27
+00D7:  BTFSS  03.0
+00D8:  GOTO   0DC
+00D9:  MOVF   2F,W
+00DA:  SUBLW  07
+00DB:  BTFSC  03.0
+....................       return;                            
+00DC:  GOTO   172
+....................     if( count > 20)                                                             // Sinyalin uzunluðu 1ms'den büyük ise 1 yaz 
+00DD:  MOVF   2F,W
+00DE:  SUBLW  14
+00DF:  BTFSC  03.0
+00E0:  GOTO   0FD
+....................       bit_set(ir_code, (31 - i));                                               // 1 yaz (31 - i) 
+00E1:  MOVF   30,W
+00E2:  SUBLW  1F
+00E3:  MOVWF  35
+00E4:  CLRF   7A
+00E5:  CLRF   79
+00E6:  CLRF   78
+00E7:  MOVLW  01
+00E8:  MOVWF  77
+00E9:  MOVF   35,W
+00EA:  MOVWF  36
+00EB:  BTFSC  03.2
+00EC:  GOTO   0F4
+00ED:  BCF    03.0
+00EE:  RLF    77,F
+00EF:  RLF    78,F
+00F0:  RLF    79,F
+00F1:  RLF    7A,F
+00F2:  DECFSZ 36,F
+00F3:  GOTO   0ED
+00F4:  MOVF   77,W
+00F5:  IORWF  31,F
+00F6:  MOVF   78,W
+00F7:  IORWF  32,F
+00F8:  MOVF   79,W
+00F9:  IORWF  33,F
+00FA:  MOVF   7A,W
+00FB:  IORWF  34,F
+00FC:  GOTO   11D
+....................     else                                                                        // Sinyalin uzunluðu 1ms'den büyük ise 1 yaz 
+....................       bit_clear(ir_code, (31 - i));                                             // 0 yaz (31 - i) 
+00FD:  MOVF   30,W
+00FE:  SUBLW  1F
+00FF:  MOVWF  35
+0100:  CLRF   7A
+0101:  CLRF   79
+0102:  CLRF   78
+0103:  MOVLW  01
+0104:  MOVWF  77
+0105:  MOVF   35,W
+0106:  MOVWF  36
+0107:  BTFSC  03.2
+0108:  GOTO   110
+0109:  BCF    03.0
+010A:  RLF    77,F
+010B:  RLF    78,F
+010C:  RLF    79,F
+010D:  RLF    7A,F
+010E:  DECFSZ 36,F
+010F:  GOTO   109
+0110:  MOVLW  FF
+0111:  XORWF  77,F
+0112:  XORWF  78,F
+0113:  XORWF  79,F
+0114:  XORWF  7A,F
+0115:  MOVF   77,W
+0116:  ANDWF  31,F
+0117:  MOVF   78,W
+0118:  ANDWF  32,F
+0119:  MOVF   79,W
+011A:  ANDWF  33,F
+011B:  MOVF   7A,W
+011C:  ANDWF  34,F
+011D:  INCF   30,F
+011E:  GOTO   0AB
+....................   } 
+....................    
+....................   if((ir_code == 0x00FF02FD) || (ir_code == 0x00FF22DD)){                       // >>| ==> 0x00FF02FD      |<< ==> 0x00FF22DD 
+011F:  MOVF   31,W
+0120:  SUBLW  FD
+0121:  BTFSS  03.2
+0122:  GOTO   12C
+0123:  MOVF   32,W
+0124:  SUBLW  02
+0125:  BTFSS  03.2
+0126:  GOTO   12C
+0127:  INCFSZ 33,W
+0128:  GOTO   12C
+0129:  MOVF   34,F
+012A:  BTFSC  03.2
+012B:  GOTO   139
+012C:  MOVF   31,W
+012D:  SUBLW  DD
+012E:  BTFSS  03.2
+012F:  GOTO   140
+0130:  MOVF   32,W
+0131:  SUBLW  22
+0132:  BTFSS  03.2
+0133:  GOTO   140
+0134:  INCFSZ 33,W
+0135:  GOTO   140
+0136:  MOVF   34,F
+0137:  BTFSS  03.2
+0138:  GOTO   140
+....................     set_timer1(0);                                                              // Kesmeleri resetle ve tekrar aktive et 
+0139:  CLRF   0E
+013A:  CLRF   0F
+013B:  CLRF   0E
+....................     clear_interrupt(INT_TIMER1); 
+013C:  BCF    0C.0
+....................     enable_interrupts(INT_TIMER1);} 
+013D:  BSF    03.5
+013E:  BSF    0C.0
+013F:  BCF    03.5
+....................   if(ir_code == 0x00FFE01F){                                                    //  -  ==> 0x00FFE01F   Motorun hýzýný düþürme iþlemi    
+0140:  MOVF   31,W
+0141:  SUBLW  1F
+0142:  BTFSS  03.2
+0143:  GOTO   155
+0144:  MOVF   32,W
+0145:  SUBLW  E0
+0146:  BTFSS  03.2
+0147:  GOTO   155
+0148:  INCFSZ 33,W
+0149:  GOTO   155
+014A:  MOVF   34,F
+014B:  BTFSS  03.2
+014C:  GOTO   155
+....................     speed_delay++; 
+014D:  INCF   28,F
+....................     if(speed_delay > 20) speed_delay = 20; 
+014E:  MOVF   28,W
+014F:  SUBLW  14
+0150:  BTFSC  03.0
+0151:  GOTO   154
+0152:  MOVLW  14
+0153:  MOVWF  28
+....................     return;} 
+0154:  GOTO   172
+....................   if(ir_code == 0x00FFA857){                                                    //  +  ==> 0x00FFA857   Motorun hýzýný arttýrma iþlemi 
+0155:  MOVF   31,W
+0156:  SUBLW  57
+0157:  BTFSS  03.2
+0158:  GOTO   16A
+0159:  MOVF   32,W
+015A:  SUBLW  A8
+015B:  BTFSS  03.2
+015C:  GOTO   16A
+015D:  INCFSZ 33,W
+015E:  GOTO   16A
+015F:  MOVF   34,F
+0160:  BTFSS  03.2
+0161:  GOTO   16A
+....................     speed_delay--; 
+0162:  DECF   28,F
+....................     if(speed_delay < 2) speed_delay = 2; 
+0163:  MOVF   28,W
+0164:  SUBLW  01
+0165:  BTFSS  03.0
+0166:  GOTO   169
+0167:  MOVLW  02
+0168:  MOVWF  28
+....................     return;} 
+0169:  GOTO   172
+....................    
+....................   remote_code = ir_code;                                                        // Komutun deðiþkene aktarýlmasý  
+016A:  MOVF   34,W
+016B:  MOVWF  2D
+016C:  MOVF   33,W
+016D:  MOVWF  2C
+016E:  MOVF   32,W
+016F:  MOVWF  2B
+0170:  MOVF   31,W
+0171:  MOVWF  2A
+0172:  BCF    0B.1
+0173:  BCF    0A.3
+0174:  BCF    0A.4
+0175:  GOTO   021
+.................... } 
+....................  
+.................... void stepper(int8 step){                                                        //Step motoru Tam adým sürme fonksiyonu 
+....................   switch(step){ 
+0176:  MOVF   2E,W
+0177:  ADDLW  FC
+0178:  BTFSC  03.0
+0179:  GOTO   187
+017A:  ADDLW  04
+017B:  GOTO   188
+....................     case 0: 
+....................       output_d(0b00000011); 
+017C:  MOVLW  03
+017D:  MOVWF  08
+....................     break; 
+017E:  GOTO   187
+....................     case 1: 
+....................       output_d(0b00000110); 
+017F:  MOVLW  06
+0180:  MOVWF  08
+....................     break; 
+0181:  GOTO   187
+....................     case 2: 
+....................       output_d(0b00001100); 
+0182:  MOVLW  0C
+0183:  MOVWF  08
+....................     break; 
+0184:  GOTO   187
+....................     case 3: 
+....................       output_d(0b00001001); 
+0185:  MOVLW  09
+0186:  MOVWF  08
+....................     break; 
+....................   } 
+0187:  RETURN
+.................... } 
+....................  
+.................... void main(){ 
+*
+01DB:  CLRF   27
+01DC:  MOVLW  02
+01DD:  MOVWF  28
+01DE:  MOVLW  64
+01DF:  MOVWF  29
+01E0:  BSF    03.5
+01E1:  BSF    1F.0
+01E2:  BSF    1F.1
+01E3:  BSF    1F.2
+01E4:  BCF    1F.3
+01E5:  MOVLW  07
+01E6:  MOVWF  1C
+01E7:  BCF    03.7
+01E8:  MOVLW  1F
+01E9:  ANDWF  03,F
+....................   output_b(0);                                                                  // PORTB'yi temizle 
+01EA:  BCF    03.5
+01EB:  CLRF   06
+....................   set_tris_b(0xF7);                                                             // PORTB'deki giriþ çýkýþlarý ayarla 
+01EC:  MOVLW  F7
+01ED:  BSF    03.5
+01EE:  MOVWF  06
+....................   port_b_pullups(TRUE);                                                         // PORTB'deki iç kesmeleri aktive et 
+01EF:  BCF    01.7
+....................   output_d(0);                                                                  // PORTD'yi temizle 
+01F0:  BCF    03.5
+01F1:  CLRF   08
+....................   set_tris_d(0);                                                                // PORTD'deki giriþ çýkýþlarý ayarla 
+01F2:  MOVLW  00
+01F3:  BSF    03.5
+01F4:  MOVWF  08
+....................   output_c(0);                                                                  // PORTD'yi temizle 
+01F5:  BCF    03.5
+01F6:  CLRF   07
+....................   set_tris_c(0);                                                                // PORTC'deki giriþ çýkýþlarý ayarla 
+01F7:  BSF    03.5
+01F8:  MOVWF  07
+....................   setup_timer_1(T1_INTERNAL | T1_DIV_BY_4);                                     // Timer1'e 1/4 prescaler deðeri ata 
+01F9:  MOVLW  A5
+01FA:  BCF    03.5
+01FB:  MOVWF  10
+....................   enable_interrupts(GLOBAL);                                                    // Global kesmeleri aktif et 
+01FC:  MOVLW  C0
+01FD:  IORWF  0B,F
+....................   enable_interrupts(INT_EXT_H2L); // Dýþ kesmeleri aktive et 
+01FE:  BSF    0B.4
+01FF:  BSF    03.5
+0200:  BCF    01.6
+....................    
+....................   while(TRUE){ 
+....................     while(remote_code == 0);                                                    //Komut alýnmýyorsa bekle 
+0201:  BCF    03.5
+0202:  MOVF   2A,F
+0203:  BTFSS  03.2
+0204:  GOTO   20E
+0205:  MOVF   2B,F
+0206:  BTFSS  03.2
+0207:  GOTO   20E
+0208:  MOVF   2C,F
+0209:  BTFSS  03.2
+020A:  GOTO   20E
+020B:  MOVF   2D,F
+020C:  BTFSC  03.2
+020D:  GOTO   202
+....................     while((remote_code == 0x00FFE21D) || (remote_code == 0x00FF02FD)){          // CH+ ==> 0x00FFE21D    veya    >>| ==> 0x00FF02FD düðmelerine basýlýrsa motoru ileri sür    
+020E:  MOVF   2A,W
+020F:  SUBLW  1D
+0210:  BTFSS  03.2
+0211:  GOTO   21B
+0212:  MOVF   2B,W
+0213:  SUBLW  E2
+0214:  BTFSS  03.2
+0215:  GOTO   21B
+0216:  INCFSZ 2C,W
+0217:  GOTO   21B
+0218:  MOVF   2D,F
+0219:  BTFSC  03.2
+021A:  GOTO   228
+021B:  MOVF   2A,W
+021C:  SUBLW  FD
+021D:  BTFSS  03.2
+021E:  GOTO   235
+021F:  MOVF   2B,W
+0220:  SUBLW  02
+0221:  BTFSS  03.2
+0222:  GOTO   235
+0223:  INCFSZ 2C,W
+0224:  GOTO   235
+0225:  MOVF   2D,F
+0226:  BTFSS  03.2
+0227:  GOTO   235
+....................       step_number++;                                                            //Motorun ileri sürülme iþlemi 
+0228:  INCF   27,F
+....................       if(step_number > 3){                                                      // 4. adýmdan sonra 1. adýma dönülmesi  
+0229:  MOVF   27,W
+022A:  SUBLW  03
+022B:  BTFSC  03.0
+022C:  GOTO   234
+....................         step_number = 0; 
+022D:  CLRF   27
+....................         stepper(step_number); 
+022E:  MOVF   27,W
+022F:  MOVWF  2E
+0230:  CALL   176
+....................         delay_ms(speed_delay); 
+0231:  MOVF   28,W
+0232:  MOVWF  2E
+0233:  CALL   190
+....................         } 
+0234:  GOTO   20E
+....................     } 
+....................      
+....................     while((remote_code == 0x00FFA25D) || (remote_code == 0x00FF22DD)){          // CH- ==> 0x00FFA25D    veya    |<< ==> 0x00FF22DD düðmelerine basýlýrsa motoru geri sür 
+0235:  MOVF   2A,W
+0236:  SUBLW  5D
+0237:  BTFSS  03.2
+0238:  GOTO   242
+0239:  MOVF   2B,W
+023A:  SUBLW  A2
+023B:  BTFSS  03.2
+023C:  GOTO   242
+023D:  INCFSZ 2C,W
+023E:  GOTO   242
+023F:  MOVF   2D,F
+0240:  BTFSC  03.2
+0241:  GOTO   24F
+0242:  MOVF   2A,W
+0243:  SUBLW  DD
+0244:  BTFSS  03.2
+0245:  GOTO   25C
+0246:  MOVF   2B,W
+0247:  SUBLW  22
+0248:  BTFSS  03.2
+0249:  GOTO   25C
+024A:  INCFSZ 2C,W
+024B:  GOTO   25C
+024C:  MOVF   2D,F
+024D:  BTFSS  03.2
+024E:  GOTO   25C
+....................       if(step_number < 1){                                                      // 2. adýmdan sonra 4. adýma dönülmesi 
+024F:  MOVF   27,F
+0250:  BTFSS  03.2
+0251:  GOTO   25B
+....................         step_number = 4; 
+0252:  MOVLW  04
+0253:  MOVWF  27
+....................         step_number--;                                                          //Motorun geri sürülme iþlemi 
+0254:  DECF   27,F
+....................         stepper(step_number); 
+0255:  MOVF   27,W
+0256:  MOVWF  2E
+0257:  CALL   176
+....................         delay_ms(speed_delay); 
+0258:  MOVF   28,W
+0259:  MOVWF  2E
+025A:  CALL   190
+....................         } 
+025B:  GOTO   235
+....................     } 
+....................      
+....................     while(remote_code == 0x00FF30CF){                                           // LED_1'i yak ve 100ms sonra söndür 
+025C:  MOVF   2A,W
+025D:  SUBLW  CF
+025E:  BTFSS  03.2
+025F:  GOTO   26F
+0260:  MOVF   2B,W
+0261:  SUBLW  30
+0262:  BTFSS  03.2
+0263:  GOTO   26F
+0264:  INCFSZ 2C,W
+0265:  GOTO   26F
+0266:  MOVF   2D,F
+0267:  BTFSS  03.2
+0268:  GOTO   26F
+....................       output_bit(LED_1, 1); 
+0269:  BSF    07.7
+....................       delay_ms(100); 
+026A:  MOVLW  64
+026B:  MOVWF  2E
+026C:  CALL   190
+....................       output_bit(LED_1, 0); 
+026D:  BCF    07.7
+026E:  GOTO   25C
+....................     } 
+....................      
+....................     while(remote_code == 0x00FF18E7){                                           // LED_2'i yak ve 100ms sonra söndür 
+026F:  MOVF   2A,W
+0270:  SUBLW  E7
+0271:  BTFSS  03.2
+0272:  GOTO   282
+0273:  MOVF   2B,W
+0274:  SUBLW  18
+0275:  BTFSS  03.2
+0276:  GOTO   282
+0277:  INCFSZ 2C,W
+0278:  GOTO   282
+0279:  MOVF   2D,F
+027A:  BTFSS  03.2
+027B:  GOTO   282
+....................       output_bit(LED_2, 1); 
+027C:  BSF    07.6
+....................       delay_ms(100); 
+027D:  MOVLW  64
+027E:  MOVWF  2E
+027F:  CALL   190
+....................       output_bit(LED_2, 0); 
+0280:  BCF    07.6
+0281:  GOTO   26F
+....................     } 
+....................      
+....................     while(remote_code == 0x00FF7A85){                                           // LED_3'i yak ve 100ms sonra söndür 
+0282:  MOVF   2A,W
+0283:  SUBLW  85
+0284:  BTFSS  03.2
+0285:  GOTO   295
+0286:  MOVF   2B,W
+0287:  SUBLW  7A
+0288:  BTFSS  03.2
+0289:  GOTO   295
+028A:  INCFSZ 2C,W
+028B:  GOTO   295
+028C:  MOVF   2D,F
+028D:  BTFSS  03.2
+028E:  GOTO   295
+....................       output_bit(LED_3, 1); 
+028F:  BSF    07.5
+....................       delay_ms(100); 
+0290:  MOVLW  64
+0291:  MOVWF  2E
+0292:  CALL   190
+....................       output_bit(LED_3, 0); 
+0293:  BCF    07.5
+0294:  GOTO   282
+....................     } 
+....................      
+....................     while(remote_code == 0x00FF10EF){                                           // LED_4'i yak ve 100ms sonra söndür 
+0295:  MOVF   2A,W
+0296:  SUBLW  EF
+0297:  BTFSS  03.2
+0298:  GOTO   2A8
+0299:  MOVF   2B,W
+029A:  SUBLW  10
+029B:  BTFSS  03.2
+029C:  GOTO   2A8
+029D:  INCFSZ 2C,W
+029E:  GOTO   2A8
+029F:  MOVF   2D,F
+02A0:  BTFSS  03.2
+02A1:  GOTO   2A8
+....................       output_bit(LED_4, 1); 
+02A2:  BSF    07.4
+....................       delay_ms(100); 
+02A3:  MOVLW  64
+02A4:  MOVWF  2E
+02A5:  CALL   190
+....................       output_bit(LED_4, 0); 
+02A6:  BCF    07.4
+02A7:  GOTO   295
+....................     } 
+....................      
+....................     while(remote_code == 0x00FF38C7){                                           // LED sekansý 1'i gerçekleþtir 
+02A8:  MOVF   2A,W
+02A9:  SUBLW  C7
+02AA:  BTFSS  03.2
+02AB:  GOTO   2B7
+02AC:  MOVF   2B,W
+02AD:  SUBLW  38
+02AE:  BTFSS  03.2
+02AF:  GOTO   2B7
+02B0:  INCFSZ 2C,W
+02B1:  GOTO   2B7
+02B2:  MOVF   2D,F
+02B3:  BTFSS  03.2
+02B4:  GOTO   2B7
+....................       LED_sequence1(); 
+02B5:  GOTO   1A4
+02B6:  GOTO   2A8
+....................     } 
+....................      
+....................     while(remote_code == 0x00FF5AA5){                                           // LED sekansý 2'yi gerçekleþtir 
+02B7:  MOVF   2A,W
+02B8:  SUBLW  A5
+02B9:  BTFSS  03.2
+02BA:  GOTO   2C6
+02BB:  MOVF   2B,W
+02BC:  SUBLW  5A
+02BD:  BTFSS  03.2
+02BE:  GOTO   2C6
+02BF:  INCFSZ 2C,W
+02C0:  GOTO   2C6
+02C1:  MOVF   2D,F
+02C2:  BTFSS  03.2
+02C3:  GOTO   2C6
+....................       LED_sequence2(); 
+02C4:  GOTO   1BE
+02C5:  GOTO   2B7
+....................     } 
+....................      
+....................     output_d(0);                                                                // Ýstenilen komutlar gelmezse portlarý temizle 
+02C6:  CLRF   08
+....................     output_c(0); 
+02C7:  CLRF   07
+....................      
+....................     if((remote_code != 0x00FFE21D) && (remote_code != 0x00FFA25D))              // CH+ ==> 0x00FFE21D    CH- ==> 0x00FFA25D 
+02C8:  MOVF   2A,W
+02C9:  SUBLW  1D
+02CA:  BTFSS  03.2
+02CB:  GOTO   2D5
+02CC:  MOVF   2B,W
+02CD:  SUBLW  E2
+02CE:  BTFSS  03.2
+02CF:  GOTO   2D5
+02D0:  INCFSZ 2C,W
+02D1:  GOTO   2D5
+02D2:  MOVF   2D,F
+02D3:  BTFSC  03.2
+02D4:  GOTO   2E6
+02D5:  MOVF   2A,W
+02D6:  SUBLW  5D
+02D7:  BTFSS  03.2
+02D8:  GOTO   2E2
+02D9:  MOVF   2B,W
+02DA:  SUBLW  A2
+02DB:  BTFSS  03.2
+02DC:  GOTO   2E2
+02DD:  INCFSZ 2C,W
+02DE:  GOTO   2E2
+02DF:  MOVF   2D,F
+02E0:  BTFSC  03.2
+02E1:  GOTO   2E6
+....................       remote_code = 0;                                                          // CH+ veya CH- düðmelerine basýlmadýðýnda motoru durdur 
+02E2:  CLRF   2D
+02E3:  CLRF   2C
+02E4:  CLRF   2B
+02E5:  CLRF   2A
+02E6:  GOTO   202
+....................     } 
+.................... } 
+....................  
+02E7:  SLEEP
+
+Configuration Fuses:
+   Word  1: 3F72   HS NOWDT PUT BROWNOUT NOLVP NOCPD NOWRT NODEBUG NOPROTECT
